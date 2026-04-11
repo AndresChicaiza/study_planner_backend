@@ -1,8 +1,25 @@
 import os
-from jose import jwt, JWTError
+import time
+import json
+import base64
 from users.models import UserProfile
 
-SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
+
+def decode_jwt_payload(token):
+    """Decodifica el payload de un JWT sin verificar la firma."""
+    try:
+        parts = token.split(".")
+        if len(parts) != 3:
+            return None
+        # Agregar padding si es necesario
+        payload_b64 = parts[1]
+        padding = 4 - len(payload_b64) % 4
+        if padding != 4:
+            payload_b64 += "=" * padding
+        payload_bytes = base64.urlsafe_b64decode(payload_b64)
+        return json.loads(payload_bytes)
+    except Exception:
+        return None
 
 
 def get_user_from_token(request):
@@ -14,32 +31,16 @@ def get_user_from_token(request):
 
     token = parts[1]
 
-    # Intentar con HS256 (legacy JWT secret de Supabase)
     try:
-        payload = jwt.decode(
-            token,
-            SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
-        user_id = payload.get("sub")
-        if user_id:
-            user, _ = UserProfile.objects.get_or_create(supabase_user_id=user_id)
-            return user
-    except JWTError:
-        pass
-
-    # Intentar sin verificar firma (para tokens ECC que no podemos verificar sin clave pública)
-    try:
-        payload = jwt.get_unverified_claims(token)
-        user_id = payload.get("sub")
-        if not user_id:
+        payload = decode_jwt_payload(token)
+        if not payload:
             return None
-        # Verificar que el token no está expirado manualmente
-        import time
+
+        # Verificar expiración
         exp = payload.get("exp", 0)
         if exp < time.time():
             return None
+
         # Verificar audience
         aud = payload.get("aud", "")
         if isinstance(aud, list):
@@ -48,7 +49,12 @@ def get_user_from_token(request):
         elif aud != "authenticated":
             return None
 
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+
         user, _ = UserProfile.objects.get_or_create(supabase_user_id=user_id)
         return user
+
     except Exception:
         return None
