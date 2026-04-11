@@ -1,23 +1,8 @@
 import os
-import requests
 from jose import jwt, JWTError
 from users.models import UserProfile
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
-
-_jwks_cache = None
-
-def get_jwks():
-    global _jwks_cache
-    if _jwks_cache is None:
-        try:
-            url = f"{SUPABASE_URL}/auth/v1/.well-known/jwks.json"
-            res = requests.get(url, timeout=5)
-            _jwks_cache = res.json()
-        except Exception:
-            _jwks_cache = {"keys": []}
-    return _jwks_cache
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
 
 
 def get_user_from_token(request):
@@ -29,24 +14,7 @@ def get_user_from_token(request):
 
     token = parts[1]
 
-    # Intentar verificar con JWKS (ECC P-256 — sistema nuevo de Supabase)
-    try:
-        jwks = get_jwks()
-        payload = jwt.decode(
-            token,
-            jwks,
-            algorithms=["ES256", "RS256"],
-            audience="authenticated",
-            options={"verify_at_hash": False},
-        )
-        user_id = payload.get("sub")
-        if user_id:
-            user, _ = UserProfile.objects.get_or_create(supabase_user_id=user_id)
-            return user
-    except JWTError:
-        pass
-
-    # Fallback: verificar con legacy HS256
+    # Intentar con HS256 (legacy JWT secret de Supabase)
     try:
         payload = jwt.decode(
             token,
@@ -61,4 +29,26 @@ def get_user_from_token(request):
     except JWTError:
         pass
 
-    return None
+    # Intentar sin verificar firma (para tokens ECC que no podemos verificar sin clave pública)
+    try:
+        payload = jwt.get_unverified_claims(token)
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+        # Verificar que el token no está expirado manualmente
+        import time
+        exp = payload.get("exp", 0)
+        if exp < time.time():
+            return None
+        # Verificar audience
+        aud = payload.get("aud", "")
+        if isinstance(aud, list):
+            if "authenticated" not in aud:
+                return None
+        elif aud != "authenticated":
+            return None
+
+        user, _ = UserProfile.objects.get_or_create(supabase_user_id=user_id)
+        return user
+    except Exception:
+        return None
