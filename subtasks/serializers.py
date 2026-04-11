@@ -7,4 +7,4 @@ class SubtaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subtask
         fields = "__all__"
-        read_only_fields = ["user", "completed_at", "created_at"]
+        read_only_fields = ["completed_at", "created_at"]
