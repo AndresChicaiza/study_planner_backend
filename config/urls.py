@@ -20,6 +20,9 @@ urlpatterns = [
     # Subtasks
     path('api/subtasks/', include('subtasks.urls')),
 
+    # Usuarios — configuración
+    path('api/users/', include('users.urls')),
+
     # Dashboard y hoy
     path('api/dashboard/', DashboardView.as_view()),
     path('api/today/', TodayView.as_view()),

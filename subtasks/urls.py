@@ -4,6 +4,7 @@ from .views import (
     create_subtask,
     complete_subtask,
     update_hours,
+    reschedule_subtask,
     delete_subtask,
 )
 
@@ -12,5 +13,6 @@ urlpatterns = [
     path("create/", create_subtask),
     path("<int:pk>/complete/", complete_subtask),
     path("<int:pk>/hours/", update_hours),
+    path("<int:pk>/reschedule/", reschedule_subtask),
     path("<int:pk>/delete/", delete_subtask),
 ]

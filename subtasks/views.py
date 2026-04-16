@@ -66,14 +66,12 @@ def update_hours(request, pk):
     except Subtask.DoesNotExist:
         return Response({"error": "Subtask no encontrada"}, status=status.HTTP_404_NOT_FOUND)
 
-    # Actualizar horas estimadas
     if "estimated_hours" in request.data:
         try:
             subtask.estimated_hours = float(request.data["estimated_hours"])
         except (ValueError, TypeError):
             return Response({"error": "Horas estimadas inválidas"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Actualizar horas reales
     if "real_hours" in request.data:
         try:
             subtask.real_hours = float(request.data["real_hours"])
@@ -85,6 +83,31 @@ def update_hours(request, pk):
         "message": "Horas actualizadas",
         "estimated_hours": subtask.estimated_hours,
         "real_hours": subtask.real_hours,
+    })
+
+
+# C1 Sprint 3 — Reprogramar subtarea (cambiar target_date)
+@api_view(["PATCH"])
+def reschedule_subtask(request, pk):
+    user = get_user_from_token(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
+
+    try:
+        subtask = Subtask.objects.get(pk=pk, user=user)
+    except Subtask.DoesNotExist:
+        return Response({"error": "Subtask no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+
+    new_date = request.data.get("target_date")
+    if not new_date:
+        return Response({"error": "Debes enviar target_date"}, status=status.HTTP_400_BAD_REQUEST)
+
+    subtask.target_date = new_date
+    subtask.save()
+
+    return Response({
+        "message": "Subtarea reprogramada",
+        "target_date": str(subtask.target_date),
     })
 
 
