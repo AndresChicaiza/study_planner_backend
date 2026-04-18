@@ -36,6 +36,7 @@ def create_subtask(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# C1 Sprint 4 — Completar con nota y horas reales opcionales
 @api_view(["PATCH"])
 def complete_subtask(request, pk):
     user = get_user_from_token(request)
@@ -50,9 +51,61 @@ def complete_subtask(request, pk):
     subtask.completed = not subtask.completed
     subtask.completed_at = timezone.now() if subtask.completed else None
     subtask.status = "completed" if subtask.completed else "pending"
+
+    # Guardar nota opcional
+    note = request.data.get("note", "")
+    if note:
+        subtask.note = note
+
+    # Guardar horas reales opcionales
+    real_hours = request.data.get("real_hours")
+    if real_hours is not None:
+        try:
+            subtask.real_hours = float(real_hours)
+        except (ValueError, TypeError):
+            pass
+
     subtask.save()
 
-    return Response({"message": "Estado actualizado", "completed": subtask.completed})
+    return Response({
+        "message": "Estado actualizado",
+        "completed": subtask.completed,
+        "status": subtask.status,
+        "note": subtask.note,
+        "real_hours": subtask.real_hours,
+    })
+
+
+# C1 Sprint 4 — Posponer subtarea a nueva fecha con nota opcional
+@api_view(["PATCH"])
+def postpone_subtask(request, pk):
+    user = get_user_from_token(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
+
+    try:
+        subtask = Subtask.objects.get(pk=pk, user=user)
+    except Subtask.DoesNotExist:
+        return Response({"error": "Subtask no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+
+    new_date = request.data.get("target_date")
+    if not new_date:
+        return Response(
+            {"error": "Debes enviar target_date"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    subtask.target_date = new_date
+    subtask.status = "postponed"
+    subtask.note = request.data.get("note", subtask.note)
+    subtask.save()
+
+    return Response({
+        "message": "Subtarea pospuesta",
+        "target_date": str(subtask.target_date),
+        "status": subtask.status,
+        "note": subtask.note,
+    })
 
 
 @api_view(["PATCH"])
@@ -86,7 +139,6 @@ def update_hours(request, pk):
     })
 
 
-# C1 Sprint 3 — Reprogramar subtarea (cambiar target_date)
 @api_view(["PATCH"])
 def reschedule_subtask(request, pk):
     user = get_user_from_token(request)

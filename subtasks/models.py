@@ -9,6 +9,7 @@ class Subtask(models.Model):
         ("pending", "Pendiente"),
         ("in_progress", "En progreso"),
         ("completed", "Completada"),
+        ("postponed", "Pospuesta"),
     ]
 
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
@@ -21,6 +22,9 @@ class Subtask(models.Model):
 
     estimated_hours = models.FloatField(default=1)
     real_hours = models.FloatField(default=0)
+
+    # C1 Sprint 4 — nota opcional al registrar avance
+    note = models.TextField(blank=True, default="")
 
     completed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
