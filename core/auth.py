@@ -11,7 +11,6 @@ def decode_jwt_payload(token):
         parts = token.split(".")
         if len(parts) != 3:
             return None
-        # Agregar padding si es necesario
         payload_b64 = parts[1]
         padding = 4 - len(payload_b64) % 4
         if padding != 4:
