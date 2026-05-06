@@ -1,22 +1,25 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from core.auth import get_user_from_token
 
 
-# C2 Sprint 3 — Obtener configuración del usuario
 @api_view(["GET"])
 def get_settings(request):
-    user = request.user
+    user = get_user_from_token(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
 
     return Response({
         "daily_hours_limit": user.daily_hours_limit,
     })
 
 
-# C2 Sprint 3 — Actualizar límite diario de horas
 @api_view(["PATCH"])
 def update_settings(request):
-    user = request.user
+    user = get_user_from_token(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
 
     limit = request.data.get("daily_hours_limit")
 

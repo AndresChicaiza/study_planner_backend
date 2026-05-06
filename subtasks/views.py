@@ -5,11 +5,14 @@ from rest_framework import status
 
 from .models import Subtask
 from .serializers import SubtaskSerializer
+from core.auth import get_user_from_token
 
 
 @api_view(["GET"])
 def list_subtasks(request):
-    user = request.user
+    user = get_user_from_token(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
 
     subtasks = Subtask.objects.filter(user=user).order_by("-created_at")
     serializer = SubtaskSerializer(subtasks, many=True)
@@ -18,7 +21,9 @@ def list_subtasks(request):
 
 @api_view(["POST"])
 def create_subtask(request):
-    user = request.user
+    user = get_user_from_token(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
 
     data = request.data.copy()
     data["user"] = user.id
@@ -31,10 +36,11 @@ def create_subtask(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# C1 Sprint 4 — Completar con nota y horas reales opcionales
 @api_view(["PATCH"])
 def complete_subtask(request, pk):
-    user = request.user
+    user = get_user_from_token(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
 
     try:
         subtask = Subtask.objects.get(pk=pk, user=user)
@@ -45,12 +51,10 @@ def complete_subtask(request, pk):
     subtask.completed_at = timezone.now() if subtask.completed else None
     subtask.status = "completed" if subtask.completed else "pending"
 
-    # Guardar nota opcional
     note = request.data.get("note", "")
     if note:
         subtask.note = note
 
-    # Guardar horas reales opcionales
     real_hours = request.data.get("real_hours")
     if real_hours is not None:
         try:
@@ -69,10 +73,11 @@ def complete_subtask(request, pk):
     })
 
 
-# C1 Sprint 4 — Posponer subtarea a nueva fecha con nota opcional
 @api_view(["PATCH"])
 def postpone_subtask(request, pk):
-    user = request.user
+    user = get_user_from_token(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
 
     try:
         subtask = Subtask.objects.get(pk=pk, user=user)
@@ -81,10 +86,7 @@ def postpone_subtask(request, pk):
 
     new_date = request.data.get("target_date")
     if not new_date:
-        return Response(
-            {"error": "Debes enviar target_date"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": "Debes enviar target_date"}, status=status.HTTP_400_BAD_REQUEST)
 
     subtask.target_date = new_date
     subtask.status = "postponed"
@@ -101,7 +103,9 @@ def postpone_subtask(request, pk):
 
 @api_view(["PATCH"])
 def update_hours(request, pk):
-    user = request.user
+    user = get_user_from_token(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
 
     try:
         subtask = Subtask.objects.get(pk=pk, user=user)
@@ -130,7 +134,9 @@ def update_hours(request, pk):
 
 @api_view(["PATCH"])
 def reschedule_subtask(request, pk):
-    user = request.user
+    user = get_user_from_token(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
 
     try:
         subtask = Subtask.objects.get(pk=pk, user=user)
@@ -152,7 +158,9 @@ def reschedule_subtask(request, pk):
 
 @api_view(["DELETE"])
 def delete_subtask(request, pk):
-    user = request.user
+    user = get_user_from_token(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
 
     try:
         subtask = Subtask.objects.get(pk=pk, user=user)
