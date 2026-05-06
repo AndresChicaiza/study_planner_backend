@@ -2,7 +2,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from datetime import date
-
 from django.db.models import Sum, Count, Q
 
 from .models import Activity
@@ -84,7 +83,6 @@ class DashboardView(APIView):
 
         today = date.today()
 
-        # Una sola consulta SQL con aggregate en lugar de bucles Python
         result = Subtask.objects.filter(activity__user=user).aggregate(
             total_subtasks=Count("id"),
             pending_hours=Sum(

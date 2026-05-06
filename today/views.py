@@ -1,7 +1,6 @@
 from datetime import date
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from core.auth import get_user_from_token
 
 from subtasks.models import Subtask
 from conflicts.models import Conflict
@@ -14,10 +13,7 @@ class TodayView(APIView):
 
         today = date.today()
 
-        user = get_user_from_token(request)
-
-        if not user:
-            return Response({"error": "Unauthorized"}, status=401)
+        user = request.user
 
         subtasks = Subtask.objects.filter(
             status="pending",

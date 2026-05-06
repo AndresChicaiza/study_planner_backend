@@ -5,14 +5,11 @@ from rest_framework import status
 
 from .models import Subtask
 from .serializers import SubtaskSerializer
-from core.auth import get_user_from_token
 
 
 @api_view(["GET"])
 def list_subtasks(request):
-    user = get_user_from_token(request)
-    if not user:
-        return Response({"error": "Unauthorized"}, status=401)
+    user = request.user
 
     subtasks = Subtask.objects.filter(user=user).order_by("-created_at")
     serializer = SubtaskSerializer(subtasks, many=True)
@@ -21,9 +18,7 @@ def list_subtasks(request):
 
 @api_view(["POST"])
 def create_subtask(request):
-    user = get_user_from_token(request)
-    if not user:
-        return Response({"error": "Unauthorized"}, status=401)
+    user = request.user
 
     data = request.data.copy()
     data["user"] = user.id
@@ -39,9 +34,7 @@ def create_subtask(request):
 # C1 Sprint 4 — Completar con nota y horas reales opcionales
 @api_view(["PATCH"])
 def complete_subtask(request, pk):
-    user = get_user_from_token(request)
-    if not user:
-        return Response({"error": "Unauthorized"}, status=401)
+    user = request.user
 
     try:
         subtask = Subtask.objects.get(pk=pk, user=user)
@@ -79,9 +72,7 @@ def complete_subtask(request, pk):
 # C1 Sprint 4 — Posponer subtarea a nueva fecha con nota opcional
 @api_view(["PATCH"])
 def postpone_subtask(request, pk):
-    user = get_user_from_token(request)
-    if not user:
-        return Response({"error": "Unauthorized"}, status=401)
+    user = request.user
 
     try:
         subtask = Subtask.objects.get(pk=pk, user=user)
@@ -110,9 +101,7 @@ def postpone_subtask(request, pk):
 
 @api_view(["PATCH"])
 def update_hours(request, pk):
-    user = get_user_from_token(request)
-    if not user:
-        return Response({"error": "Unauthorized"}, status=401)
+    user = request.user
 
     try:
         subtask = Subtask.objects.get(pk=pk, user=user)
@@ -141,9 +130,7 @@ def update_hours(request, pk):
 
 @api_view(["PATCH"])
 def reschedule_subtask(request, pk):
-    user = get_user_from_token(request)
-    if not user:
-        return Response({"error": "Unauthorized"}, status=401)
+    user = request.user
 
     try:
         subtask = Subtask.objects.get(pk=pk, user=user)
@@ -165,9 +152,7 @@ def reschedule_subtask(request, pk):
 
 @api_view(["DELETE"])
 def delete_subtask(request, pk):
-    user = get_user_from_token(request)
-    if not user:
-        return Response({"error": "Unauthorized"}, status=401)
+    user = request.user
 
     try:
         subtask = Subtask.objects.get(pk=pk, user=user)

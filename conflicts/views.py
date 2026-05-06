@@ -4,7 +4,6 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 
-from core.auth import get_user_from_token
 from .models import Conflict
 from subtasks.models import Subtask
 
@@ -12,9 +11,7 @@ from subtasks.models import Subtask
 class ConflictListView(APIView):
 
     def get(self, request):
-        user = get_user_from_token(request)
-        if not user:
-            return Response({"error": "Unauthorized"}, status=401)
+        user = request.user
 
         conflicts = Conflict.objects.filter(
             user=user,
@@ -38,9 +35,7 @@ class ConflictListView(APIView):
 class ResolveConflictView(APIView):
 
     def patch(self, request, conflict_id):
-        user = get_user_from_token(request)
-        if not user:
-            return Response({"error": "Unauthorized"}, status=401)
+        user = request.user
 
         conflict = get_object_or_404(Conflict, id=conflict_id, user=user)
         conflict.resolved = True
@@ -53,9 +48,7 @@ class ResolveConflictView(APIView):
 class RedistributeConflictView(APIView):
 
     def post(self, request, conflict_id):
-        user = get_user_from_token(request)
-        if not user:
-            return Response({"error": "Unauthorized"}, status=401)
+        user = request.user
 
         conflict = get_object_or_404(Conflict, id=conflict_id, user=user)
 
